@@ -4,7 +4,6 @@ import (
 	"Sgateway/pkg/errors"
 	"hash/crc32"
 	"math/rand"
-	"net"
 )
 
 type LoadBalancing int
@@ -24,7 +23,7 @@ const (
 type (
 	loadBalancer interface {
 		add(items []Proxy)
-		next() Proxy
+		next(targetUrl string) Proxy
 	}
 
 	randomLoadBalance struct {
@@ -67,7 +66,7 @@ func (lb *randomLoadBalance) add(items []Proxy) error {
 	return nil
 }
 
-func (lb *randomLoadBalance) next() (Proxy, error) {
+func (lb *randomLoadBalance) next(_ string) (Proxy, error) {
 	if len(lb.proxySet) == 0 {
 		return nil, errors.ErrBalanceProxyIsNil
 	}
@@ -86,7 +85,7 @@ func (lb *roundLoadBalancer) add(items []Proxy) error {
 	return nil
 }
 
-func (lb *roundLoadBalancer) next() (Proxy, error) {
+func (lb *roundLoadBalancer) next(_ string) (Proxy, error) {
 	if len(lb.proxySet) == 0 {
 		return nil, errors.ErrBalanceProxyIsNil
 	}
@@ -125,7 +124,7 @@ func (lb *weightServerLoadBalancer) add(items []Proxy) error {
 }
 
 // next returns the eligible event-loop by taking the root node from minimum heap based on Least-Connections algorithm.
-func (lb *weightServerLoadBalancer) next() (Proxy, error) {
+func (lb *weightServerLoadBalancer) next(_ string) (Proxy, error) {
 	if len(lb.proxySet) == 0 {
 		return nil, errors.ErrBalanceProxyIsNil
 	}
@@ -155,13 +154,14 @@ func (lb *urlAddrHashLoadBalancer) add(items []Proxy) error {
 	if len(items) == 0 {
 		return errors.ErrLoadBalanceParma
 	}
-	lb.eventLoops = append(lb.eventLoops, )
-	lb.size++
+	lb.eventLoops = append(lb.eventLoops, items...)
+	lb.size += len(items)
+	return nil
 }
 
 // hash converts a string to a unique hash code.
-func (lb *urlAddrHashLoadBalancer) next() (Proxy, error) {
-	v := int(crc32.ChecksumIEEE(byte("ssadf"))
+func (lb *urlAddrHashLoadBalancer) hash(target string) int {
+	v := int(crc32.ChecksumIEEE([]byte(target)))
 	if v >= 0 {
 		return v
 	}
@@ -169,19 +169,8 @@ func (lb *urlAddrHashLoadBalancer) next() (Proxy, error) {
 }
 
 // next returns the eligible event-loop by taking the remainder of a hash code as the index of event-loop list.
-func (lb *urlAddrHashLoadBalancer) next(netAddr net.Addr) *eventloop {
-	hashCode := lb.hash(netAddr.String())
-	return lb.eventLoops[hashCode%lb.size]
+func (lb *urlAddrHashLoadBalancer) next(url string)  (Proxy, error) {
+	hashCode := lb.hash(url)
+	return lb.eventLoops[hashCode%lb.size],nil
 }
 
-func (lb *urlAddrHashLoadBalancer) iterate(f func(int, *eventloop) bool) {
-	for i, el := range lb.eventLoops {
-		if !f(i, el) {
-			break
-		}
-	}
-}
-
-func (lb *sourceAddrHashLoadBalancer) len() int {
-	return lb.size
-}
