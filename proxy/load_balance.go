@@ -11,13 +11,16 @@ type LoadBalancing int
 const (
 
 	// 轮询
-	RoundRobin LoadBalancing = iota
+	Random LoadBalancing = iota
 
 	// 最少连接数轮询
-	LeastConnections
+	Round
 
-	// hash 负载
-	SourceAddrHash
+	// 权重
+	WeightServer
+
+	// 路径的hash
+	UrlAddrHash
 )
 
 type (
