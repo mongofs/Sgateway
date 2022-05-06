@@ -7,17 +7,30 @@ import (
 )
 
 type Server struct {
+	url    string
 	target *url.URL
+	weight int
 }
 
-func NewServer (urls string) (*Server,error){
+func NewServer(urls string) (*Server, error) {
 	proxy, err := url.Parse(urls)
-	if err !=nil {
-		return nil,err
+	if err != nil {
+		return nil, err
 	}
-	return &Server{target: proxy},nil
+	return &Server{target: proxy}, nil
 }
 
+func (s Server) LoadConn() int32 {
+	panic("implement me")
+}
+
+func (s Server) Weight() int {
+	return s.weight
+}
+
+func (s Server) Target() string {
+	return s.url
+}
 
 func (s Server) Reverse(request *http.Request, write http.ResponseWriter) error {
 	request.URL.Scheme = s.target.Scheme
